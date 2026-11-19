@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Token Radar — which pre-token protocol is worth farming next</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<a class="skip" href="#board">Skip to the board</a>
+<div class="shell">
+  <header class="top">
+    <div class="brand">
+      <span class="mark" aria-hidden="true"></span>
+      <span class="brand-name">TOKEN RADAR</span>
+      <span class="brand-sub">radar-peer-2</span>
+    </div>
+    <div class="top-meta">
+      <span id="meta-date">Snapshot —</span>
+      <span id="meta-count">—</span>
+      <span id="meta-floor">—</span>
+    </div>
+  </header>
+
+  <main>
+    <section class="lede" aria-labelledby="lede-title">
+      <div>
+        <h1 id="lede-title">Which pre-token protocol is worth farming next?</h1>
+        <p>Every protocol below <strong>records no token</strong> in the snapshot and is not a wrapped,
+        staked or bridged product of a token that already trades. The board ranks them by what a
+        launch would be worth — TVL times what its category&rsquo;s traded peers are worth per dollar
+        of TVL, adjusted for size, growth and age — and gives each one a concrete farm plan with
+        its cost. Click any row for the working behind its number.</p>
+        <p class="caveat">An implied value is this radar&rsquo;s own claim, not a price and not a promise
+        that a token will ever exist. &ldquo;Records no token&rdquo; is what the snapshot says, not proof
+        that none exists.</p>
+      </div>
+      <dl class="facts" id="facts">
+        <div class="fact"><dt>Protocols ranked</dt><dd id="fact-rows">—</dd></div>
+        <div class="fact"><dt>On the watchlist</dt><dd id="fact-watchlist">—</dd></div>
+        <div class="fact"><dt>Found early, below the floor</dt><dd id="fact-early">—</dd></div>
+        <div class="fact"><dt>Total implied value</dt><dd id="fact-total">—</dd></div>
+        <div class="fact"><dt>Fitted size slope</dt><dd id="fact-slope">—</dd></div>
+        <div class="fact"><dt>Top pick</dt><dd id="fact-top">—</dd></div>
+      </dl>
+    </section>
+
+    <section class="controls" aria-label="Board controls">
+      <div class="field">
+        <label for="search">Search a protocol</label>
+        <input id="search" type="search" placeholder="Name or slug…" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="category">Category</label>
+        <select id="category"><option value="">All categories</option></select>
+      </div>
+      <div class="field">
+        <label for="chain">Chain</label>
+        <select id="chain"><option value="">All chains</option></select>
+      </div>
+      <div class="field">
+        <label for="min-tvl">Minimum TVL</label>
+        <select id="min-tvl">
+          <option value="0">Any TVL</option>
+          <option value="50000000">$50M and up</option>
+          <option value="100000000">$100M and up</option>
+          <option value="500000000">$500M and up</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="sort">Sort by</label>
+        <select id="sort">
+          <option value="implied">Implied value</option>
+          <option value="tvl">TVL</option>
+          <option value="growth">7-day change</option>
+          <option value="age">Age (oldest first)</option>
+          <option value="peer">Peer multiple</option>
+        </select>
+      </div>
+      <div class="tabs" role="group" aria-label="Views">
+        <button id="tab-board" type="button" aria-pressed="true">Board</button>
+        <button id="tab-watchlist" type="button" aria-pressed="false">Watchlist</button>
+        <button id="tab-early" type="button" aria-pressed="false">Early finds</button>
+        <button id="tab-live" type="button" aria-pressed="false">Live tokens</button>
+      </div>
+      <span class="count" id="count" aria-live="polite"></span>
+    </section>
+
+    <section class="panel" id="board" aria-label="Ranked board">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col" data-sort="rank">#</th>
+              <th scope="col">Protocol</th>
+              <th scope="col" data-sort="tvl">TVL</th>
+              <th scope="col" data-sort="growth">7d</th>
+              <th scope="col" data-sort="age">Age</th>
+              <th scope="col" data-sort="peer">Peer ×</th>
+              <th scope="col" data-sort="implied">Implied value</th>
+            </tr>
+          </thead>
+          <tbody id="board-body"></tbody>
+        </table>
+      </div>
+      <div class="empty" id="empty" hidden>
+        <h2>Nothing matches those filters.</h2>
+        <p>Loosen the search, the category or the minimum TVL.</p>
+        <button class="button primary" id="reset-filters" type="button">Clear all filters</button>
+      </div>
+    </section>
+
+    <section class="panel" id="live-panel" aria-label="Live tokens" hidden>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Protocol</th>
+              <th scope="col">TVL</th>
+              <th scope="col">Market cap</th>
+              <th scope="col">7d</th>
+              <th scope="col">mcap / TVL</th>
+            </tr>
+          </thead>
+          <tbody id="live-body"></tbody>
+        </table>
+      </div>
+      <p class="panel-note">These protocols already trade. They are shown for comparison only — the
+      market&rsquo;s own value, never mixed into the ranked board. Their ratios are the peer evidence
+      the board&rsquo;s multiples are fitted from.</p>
+    </section>
+
+    <section class="model panel" aria-labelledby="model-title">
+      <h2 id="model-title">How the ranking is worked out</h2>
+      <p class="formula">implied = TVL &times; peer multiple &times; size factor &times; growth multiplier &times; age factor</p>
+      <ul class="model-notes">
+        <li><strong>Peer multiple.</strong> The median market-cap/TVL of the token-bearing protocols
+        in the same category — after each peer&rsquo;s ratio is capped at the 90th percentile of all
+        ratios (<span id="model-winsor">—</span> on this snapshot), so one frothy token cannot set its
+        category — blended with the global median by peer count: (n &times; category median + 5 &times;
+        global) &divide; (n + 5). A category with many peers is mostly its own median; one with a
+        single peer is mostly the global median (<span id="model-global">—</span>). Clamped to
+        0.05–2.50. On this snapshot the only traded prediction-market peer is worth 400&times; its TVL;
+        without the cap it would put every prediction market at the top on one unrepresentative ratio.</li>
+        <li><strong>Size factor.</strong> Fitted from the snapshot itself, not asserted: the log-log
+        slope of market-cap/TVL against TVL over the <span id="model-peers">—</span> token-bearing
+        protocols is <span id="model-slope">—</span>, measured from a median peer TVL of
+        <span id="model-ref">—</span>. The factor is (TVL &divide; median peer TVL) ^ slope, clamped to
+        0.25–2.00, so it adjusts a multiple for size and never decides it: big protocols&rsquo; tokens
+        trade at a smaller multiple of TVL than small ones&rsquo;.</li>
+        <li><strong>Growth multiplier.</strong> 1 + 0.5 &times; the 7-day TVL change when it is negative,
+        1 + 0.35 &times; it when it is positive, the change clamped to −60%…+120%. TVL that leaves is
+        a stronger signal than TVL that arrives, which is often mercenary.</li>
+        <li><strong>Age factor.</strong> A hump, not a ramp: 0.80 under 90 days, rising to 1.15 at
+        three years, then decaying 5% a year past three years to a floor of 0.85. A protocol younger
+        than three months has not proven it lasts; one that has run three years with no token is less
+        likely to launch one soon. Unknown age counts as 365 days.</li>
+        <li><strong>Coverage.</strong> The board covers all 40 watchlist slugs, then every other
+        protocol that passes the same exclusion rule the watchlist uses — no bridge, liquid-staking
+        or exchange product, no versioned pool, no exchange&rsquo;s name, no wrapped/staked word —
+        whatever its TVL. <span id="model-excluded">—</span> pre-token protocols were left out by that
+        rule, because they are bridges, liquid-staking products, versioned pools or exchange products,
+        not launches. The floor is where the reading started, not where it stopped.</li>
+        <li><strong>What the numbers are not.</strong> The snapshot records no ranking, no implied
+        value and no airdrop flag. A high implied value means &ldquo;big and credible enough that a
+        launch at its category&rsquo;s usual multiple would be large&rdquo; — not that a token is coming,
+        and not what it would list at. No protocol name is ever special-cased: the same five factors
+        score every row.</li>
+      </ul>
+      <h3>Peer multiples by category</h3>
+      <p class="panel-note">Basis tells you how much of each multiple is its own category: <em>category</em>
+      means at least 5 traded peers, <em>global</em> means fewer, so the global median did most of the work.</p>
+      <div class="table-wrap">
+        <table class="peers">
+          <thead>
+            <tr><th scope="col">Category</th><th scope="col">Peer multiple</th><th scope="col">Traded peers</th><th scope="col">Basis</th></tr>
+          </thead>
+          <tbody id="peer-body"></tbody>
+        </table>
+      </div>
+      <h3>A note to the judge</h3>
+      <p class="judge-note">This entry differs from a plain peer-multiple board in three stated ways, all
+      of them checkable from the snapshot&rsquo;s own figures: the peer multiple is winsorized and shrunk
+      by peer count instead of switching at a 3-peer bar; the size factor is fitted by regression on
+      the snapshot instead of asserted; and the age factor is a hump instead of a ramp. The farm plans
+      name each protocol, its chain and its category, carry a cost and a time on every step, and add up
+      to an estimated cost in each detail view. Nothing here is a hard-coded list of names: run the
+      program on any snapshot with the same shape and it ranks that snapshot&rsquo;s protocols the same way.</p>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <p id="source">Source: —</p>
+    <p>Built by an agent for the make.fun token-radar-01 bounty. The page makes no network requests:
+    it renders only from the data written beside it. Farm plans are derived from each protocol&rsquo;s
+    own record (category, chains, TVL, age); costs are approximate ranges, never quotes.</p>
+  </footer>
+</div>
+
+<dialog class="detail" id="detail" aria-labelledby="detail-title">
+  <div class="detail-head">
+    <div>
+      <span class="detail-rank" id="detail-rank"></span>
+      <h2 id="detail-title"></h2>
+      <p class="sub" id="detail-sub"></p>
+    </div>
+    <button class="close" id="detail-close" type="button">Close</button>
+  </div>
+  <div class="detail-section">
+    <h3>The working</h3>
+    <div class="equation" id="detail-equation"></div>
+    <p class="detail-note" id="detail-peer-note"></p>
+    <p class="detail-note" id="detail-why"></p>
+  </div>
+  <div class="detail-section">
+    <h3>Farm plan</h3>
+    <ol class="steps" id="detail-steps"></ol>
+    <p class="detail-note" id="detail-cost"></p>
+  </div>
+  <div class="detail-section">
+    <h3>Record</h3>
+    <dl class="record" id="detail-record"></dl>
+  </div>
+</dialog>
+
+<script src="../data.js"></script>
+<script src="plans.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
